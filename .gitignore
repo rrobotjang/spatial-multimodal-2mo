@@ -1,0 +1,10 @@
+*.bin
+*.pt
+*.pth
+*.safetensors
+*.ckpt
+.ipynb_checkpoints/
+__pycache__/
+*.egg-info/
+node_modules/
+.venv/
