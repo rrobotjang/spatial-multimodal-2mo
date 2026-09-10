@@ -1,0 +1,154 @@
+[11:29:16] === T9 FSD E2E start ===
+[11:29:16] uvicorn pid=21230 on http://127.0.0.1:8011
+INFO:     Started server process [21230]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50191 - "GET /health HTTP/1.1" 200 OK
+[11:29:16] server healthy (GET /health -> 200)
+[11:29:16] fixture: valid 1x1 PNG -> /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-04dzjgq1/tiny.png (69 bytes)
+[11:29:19] CASE 1 (happy): select scene -> Run -> 4 stages -> verdict
+INFO:     127.0.0.1:50192 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50192 - "GET /static/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50193 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50193 - "GET /api/scenes HTTP/1.1" 200 OK
+[11:29:19] title OK: 'FSD Spatial Reasoning Demo'
+[11:29:49] terminating uvicorn pid=21230
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21230]
+[11:29:49] uvicorn terminated
+[11:29:49] removed temp dir /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-04dzjgq1
+[11:29:57] === T9 FSD E2E start ===
+[11:29:57] uvicorn pid=21270 on http://127.0.0.1:8011
+INFO:     Started server process [21270]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50195 - "GET /health HTTP/1.1" 200 OK
+[11:29:58] server healthy (GET /health -> 200)
+[11:29:58] fixture: valid 1x1 PNG -> /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-p1ll0vjj/tiny.png (69 bytes)
+[11:29:58] CASE 1 (happy): select scene -> Run -> 4 stages -> verdict
+INFO:     127.0.0.1:50196 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50196 - "GET /static/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50197 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50197 - "GET /api/scenes HTTP/1.1" 200 OK
+[11:29:58] title OK: 'FSD Spatial Reasoning Demo'
+INFO:     127.0.0.1:50197 - "GET /api/demo/kitti-scene-70 HTTP/1.1" 405 Method Not Allowed
+[11:29:58] terminating uvicorn pid=21270
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21270]
+[11:29:59] uvicorn terminated
+[11:29:59] removed temp dir /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-p1ll0vjj
+[11:30:36] === T9 FSD E2E start ===
+[11:30:36] uvicorn pid=21313 on http://127.0.0.1:8011
+INFO:     Started server process [21313]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50199 - "GET /health HTTP/1.1" 200 OK
+[11:30:37] server healthy (GET /health -> 200)
+[11:30:37] fixture: valid 1x1 PNG -> /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-oebd_oa7/tiny.png (69 bytes)
+[11:30:38] CASE 1 (happy): select scene -> Run -> 4 stages -> verdict
+INFO:     127.0.0.1:50200 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50200 - "GET /static/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50201 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50201 - "GET /api/scenes HTTP/1.1" 200 OK
+[11:30:38] title OK: 'FSD Spatial Reasoning Demo'
+INFO:     127.0.0.1:50201 - "GET /api/demo/kitti-scene-70 HTTP/1.1" 405 Method Not Allowed
+[11:31:08] terminating uvicorn pid=21313
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21313]
+[11:31:08] uvicorn terminated
+[11:31:08] removed temp dir /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-oebd_oa7
+[11:31:28] === T9 FSD E2E start ===
+[11:31:28] uvicorn pid=21338 on http://127.0.0.1:8011
+INFO:     Started server process [21338]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50203 - "GET /health HTTP/1.1" 200 OK
+[11:31:29] server healthy (GET /health -> 200)
+[11:31:29] fixture: valid 1x1 PNG -> /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-qkb80rvv/tiny.png (69 bytes)
+[11:31:30] CASE 1 (happy): select scene -> Run -> 4 stages -> verdict
+INFO:     127.0.0.1:50204 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50204 - "GET /static/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50205 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50204 - "GET /api/scenes HTTP/1.1" 200 OK
+[11:31:30] title OK: 'FSD Spatial Reasoning Demo'
+INFO:     127.0.0.1:50204 - "POST /api/demo/kitti-scene-70 HTTP/1.1" 200 OK
+[11:31:30] answer = 'CANNOT proceed with payment — unsafe. Ego vehicle must stop and yield to vulnerable road user(s).'
+[11:31:30] stage cards present = 4
+[11:31:30] grounding rows=2 graph edges=4 reasoning steps=4
+[11:31:30] scene question = 'Is the pedestrian crossing legally at a crosswalk or jaywalking?'
+[11:31:30] screenshot saved -> /Users/robotjang/spatial-multimodal-2mo/.omo/evidence/task-9-spatial-multimodal-2mo.png
+[11:31:30] CASE 2 (failure): non-image upload -> 400 surfaced
+INFO:     127.0.0.1:50204 - "POST /api/upload HTTP/1.1" 400 Bad Request
+[11:31:30] txt upload msg = 'Not a valid image file — upload PNG/JPG'
+[11:31:30] CASE 2b: text file named .png -> magic-byte rejection (400)
+INFO:     127.0.0.1:50204 - "POST /api/upload HTTP/1.1" 400 Bad Request
+[11:31:30] fake-png upload msg = 'Not a valid image file — upload PNG/JPG'
+[11:31:30] CASE 2 (adapter): valid tiny PNG -> 503 adapter_not_ready surfaced
+INFO:     127.0.0.1:50204 - "POST /api/upload HTTP/1.1" 503 Service Unavailable
+[11:31:30] valid png upload msg = 'adapter_not_ready (503): Spatial adapter not trained yet — run T7 then switch pipeline backend.'
+[11:31:30] browser console:
+[11:31:30] [page:error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[page:error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[page:error] Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+[11:31:30] E2E PASS: both cases exit 0
+[11:31:30] === T9 FSD E2E done ===
+[11:31:30] terminating uvicorn pid=21338
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21338]
+[11:31:31] uvicorn terminated
+[11:31:31] removed temp dir /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-qkb80rvv
+[11:35:11] === T9 FSD E2E start ===
+[11:35:11] uvicorn pid=21520 on http://127.0.0.1:8011
+INFO:     Started server process [21520]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50235 - "GET /health HTTP/1.1" 200 OK
+[11:35:11] server healthy (GET /health -> 200)
+[11:35:11] fixture: valid 1x1 PNG -> /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-vd3sptix/tiny.png (69 bytes)
+[11:35:12] CASE 1 (happy): select scene -> Run -> 4 stages -> verdict
+INFO:     127.0.0.1:50236 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50236 - "GET /static/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50237 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50237 - "GET /api/scenes HTTP/1.1" 200 OK
+[11:35:13] title OK: 'FSD Spatial Reasoning Demo'
+INFO:     127.0.0.1:50237 - "POST /api/demo/kitti-scene-70 HTTP/1.1" 200 OK
+[11:35:13] answer = 'CANNOT proceed with payment — unsafe. Ego vehicle must stop and yield to vulnerable road user(s).'
+[11:35:13] stage cards present = 4
+[11:35:13] grounding rows=2 graph edges=4 reasoning steps=4
+[11:35:13] scene question = 'Is the pedestrian crossing legally at a crosswalk or jaywalking?'
+[11:35:13] screenshot saved -> /Users/robotjang/spatial-multimodal-2mo/.omo/evidence/task-9-spatial-multimodal-2mo.png
+[11:35:13] CASE 2 (failure): non-image upload -> 400 surfaced
+INFO:     127.0.0.1:50237 - "POST /api/upload HTTP/1.1" 400 Bad Request
+[11:35:13] txt upload msg = 'Not a valid image file — upload PNG/JPG'
+[11:35:13] CASE 2b: text file named .png -> magic-byte rejection (400)
+INFO:     127.0.0.1:50237 - "POST /api/upload HTTP/1.1" 400 Bad Request
+[11:35:13] fake-png upload msg = 'Not a valid image file — upload PNG/JPG'
+[11:35:13] CASE 2 (adapter): valid tiny PNG -> 503 adapter_not_ready surfaced
+INFO:     127.0.0.1:50237 - "POST /api/upload HTTP/1.1" 503 Service Unavailable
+[11:35:13] valid png upload msg = 'adapter_not_ready (503): Spatial adapter not trained yet — run T7 then switch pipeline backend.'
+[11:35:13] browser console:
+[11:35:13] [page:error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[page:error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[page:error] Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+[11:35:13] E2E PASS: both cases exit 0
+[11:35:13] === T9 FSD E2E done ===
+[11:35:13] terminating uvicorn pid=21520
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21520]
+[11:35:13] uvicorn terminated
+[11:35:13] removed temp dir /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-vd3sptix

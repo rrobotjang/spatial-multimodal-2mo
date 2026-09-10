@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>FSD Spatial Reasoning Demo</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body>
+  <header class="app-header">
+    <h1>FSD Spatial Reasoning Demo</h1>
+    <p class="tagline">DRScaffold-style 4-stage autonomous-driving reasoning over KITTI scenes</p>
+    <ol class="flow" aria-label="Pipeline flow diagram">
+      <li class="flow-step">1 · Grounding</li>
+      <li class="flow-arrow" aria-hidden="true">→</li>
+      <li class="flow-step">2 · Scene Graph</li>
+      <li class="flow-arrow" aria-hidden="true">→</li>
+      <li class="flow-step">3 · Staged Reasoning</li>
+      <li class="flow-arrow" aria-hidden="true">→</li>
+      <li class="flow-step">4 · Final Answer</li>
+    </ol>
+  </header>
+
+  <main>
+    <section class="panel" id="scene-panel">
+      <h2>Scene Demo</h2>
+      <p class="hint">
+        Pick a KITTI scene from the curated dataset (T6 val split) and run the
+        full 4-stage spatial reasoning pipeline end-to-end.
+      </p>
+      <div class="controls">
+        <label for="scene-select">Scene</label>
+        <select id="scene-select" aria-label="Scene selector">
+          <option>Loading scenes…</option>
+        </select>
+        <button id="run-btn" type="button">Run Pipeline</button>
+      </div>
+      <p id="scene-question" class="question" aria-label="Scene question"></p>
+      <p id="status" class="status" aria-live="polite">Ready.</p>
+    </section>
+
+    <section class="stages" aria-label="Reasoning stages">
+      <article class="stage-card" data-stage="1" id="stage1">
+        <h2><span class="dot dot-1"></span>Stage 1 · Entity Grounding</h2>
+        <div class="stage-body"><p class="placeholder">Click <strong>Run Pipeline</strong> to ground the scene entities.</p></div>
+      </article>
+      <article class="stage-card" data-stage="2" id="stage2">
+        <h2><span class="dot dot-2"></span>Stage 2 · Scene Graph</h2>
+        <div class="stage-body"><p class="placeholder">Waiting for scene graph…</p></div>
+      </article>
+      <article class="stage-card" data-stage="3" id="stage3">
+        <h2><span class="dot dot-3"></span>Stage 3 · Staged Reasoning</h2>
+        <div class="stage-body"><p class="placeholder">Waiting for reasoning chain…</p></div>
+      </article>
+      <article class="stage-card" data-stage="4" id="stage4">
+        <h2><span class="dot dot-4"></span>Stage 4 · Final Answer</h2>
+        <div class="stage-body"><p class="placeholder">Waiting for verdict…</p></div>
+      </article>
+    </section>
+
+    <section class="panel" id="upload-panel">
+      <h2>Image Upload</h2>
+      <p class="hint">
+        The spatial adapter (Qwen2.5-VL LoRA, task 7) is not trained yet, so a
+        valid image upload reports a structured
+        <code>adapter_not_ready</code> (HTTP 503) status. Files that are not
+        images are rejected with HTTP 400.
+      </p>
+      <div class="controls">
+        <input id="upload-input" type="file"
+               accept="image/png,image/jpeg,image/gif,image/webp,image/bmp"
+               aria-label="Upload an image file" />
+        <button id="upload-btn" type="button">Upload Image</button>
+      </div>
+      <p id="upload-result" class="upload-msg" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>Spatial reasoning demo · 4-stage pipeline · Mock inference backend (no external API, offline-capable).</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
