@@ -152,3 +152,46 @@ INFO:     Application shutdown complete.
 INFO:     Finished server process [21520]
 [11:35:13] uvicorn terminated
 [11:35:13] removed temp dir /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-vd3sptix
+[11:35:57] === T9 FSD E2E start ===
+[11:35:57] uvicorn pid=21562 on http://127.0.0.1:8011
+INFO:     Started server process [21562]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8011 (Press CTRL+C to quit)
+INFO:     127.0.0.1:50239 - "GET /health HTTP/1.1" 200 OK
+[11:35:58] server healthy (GET /health -> 200)
+[11:35:58] fixture: valid 1x1 PNG -> /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-ilo6gblc/tiny.png (69 bytes)
+[11:35:59] CASE 1 (happy): select scene -> Run -> 4 stages -> verdict
+INFO:     127.0.0.1:50240 - "GET / HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50241 - "GET /static/app.js HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50240 - "GET /static/styles.css HTTP/1.1" 200 OK
+INFO:     127.0.0.1:50240 - "GET /api/scenes HTTP/1.1" 200 OK
+[11:35:59] title OK: 'FSD Spatial Reasoning Demo'
+INFO:     127.0.0.1:50240 - "POST /api/demo/kitti-scene-70 HTTP/1.1" 200 OK
+[11:35:59] answer = 'CANNOT proceed with payment — unsafe. Ego vehicle must stop and yield to vulnerable road user(s).'
+[11:35:59] stage cards present = 4
+[11:35:59] grounding rows=2 graph edges=4 reasoning steps=4
+[11:35:59] scene question = 'Is the pedestrian crossing legally at a crosswalk or jaywalking?'
+[11:35:59] screenshot saved -> /Users/robotjang/spatial-multimodal-2mo/.omo/evidence/task-9-spatial-multimodal-2mo.png
+[11:35:59] CASE 2 (failure): non-image upload -> 400 surfaced
+INFO:     127.0.0.1:50240 - "POST /api/upload HTTP/1.1" 400 Bad Request
+[11:35:59] txt upload msg = 'Not a valid image file — upload PNG/JPG'
+[11:35:59] CASE 2b: text file named .png -> magic-byte rejection (400)
+INFO:     127.0.0.1:50240 - "POST /api/upload HTTP/1.1" 400 Bad Request
+[11:35:59] fake-png upload msg = 'Not a valid image file — upload PNG/JPG'
+[11:35:59] CASE 2 (adapter): valid tiny PNG -> 503 adapter_not_ready surfaced
+INFO:     127.0.0.1:50240 - "POST /api/upload HTTP/1.1" 503 Service Unavailable
+[11:35:59] valid png upload msg = 'adapter_not_ready (503): Spatial adapter not trained yet — run T7 then switch pipeline backend.'
+[11:35:59] browser console:
+[11:35:59] [page:error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[page:error] Failed to load resource: the server responded with a status of 400 (Bad Request)
+[page:error] Failed to load resource: the server responded with a status of 503 (Service Unavailable)
+[11:35:59] E2E PASS: both cases exit 0
+[11:35:59] === T9 FSD E2E done ===
+[11:35:59] terminating uvicorn pid=21562
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [21562]
+[11:35:59] uvicorn terminated
+[11:35:59] removed temp dir /var/folders/4g/pj3lkl1s0wg3j99tm437bfw80000gn/T/fsd-e2e-ilo6gblc

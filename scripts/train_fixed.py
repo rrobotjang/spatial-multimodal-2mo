@@ -47,7 +47,7 @@ CONFIG: dict[str, Any] = {
     "per_device_batch_size": 1,
     "gradient_accumulation_steps": 16,
     "learning_rate": 2e-4,
-    "warmup_steps": 3,
+    "warmup_ratio": 0.05,
     "weight_decay": 0.01,
     "logging_steps": 5,
     "eval_steps": 50,
