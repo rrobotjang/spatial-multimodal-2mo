@@ -137,9 +137,15 @@ class QwenVLBackend:
         os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
         import torch
         from peft import PeftModel
-        from transformers import AutoModelForVision2Seq, AutoTokenizer
+        from transformers import AutoTokenizer
 
-        base = AutoModelForVision2Seq.from_pretrained(
+        # transformers>=5 renamed the vision-conditional entry point
+        try:
+            from transformers import AutoModelForVision2Seq as VisionModel
+        except ImportError:
+            from transformers import AutoModelForImageTextToText as VisionModel  # type: ignore[no-redef]
+
+        base = VisionModel.from_pretrained(
             self.MODEL_ID,
             torch_dtype=torch.bfloat16,
             device_map="auto",
