@@ -61,10 +61,10 @@
     <section class="panel" id="upload-panel">
       <h2>Image Upload</h2>
       <p class="hint">
-        The spatial adapter (Qwen2.5-VL LoRA, task 7) is not trained yet, so a
-        valid image upload reports a structured
-        <code>adapter_not_ready</code> (HTTP 503) status. Files that are not
-        images are rejected with HTTP 400.
+        Upload an image file for analysis. The current text-only spatial
+        adapter cannot process raw images; upload returns
+        <code>vision_mode_pending</code> (HTTP 501). Use the Scene Demo above
+        for the full model-backed pipeline on curated KITTI scenes.
       </p>
       <div class="controls">
         <input id="upload-input" type="file"

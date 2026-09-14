@@ -178,6 +178,10 @@ async function runUpload() {
     if (res.status === 400) {
       const data = await res.json().catch(() => ({}));
       setUploadMsg(data.detail || "Not a valid image file — upload PNG/JPG", "error");
+    } else if (res.status === 501) {
+      const data = await res.json().catch(() => ({}));
+      const msg = data.message || "Text-only adapter — raw-image upload not supported. Use the Scene Demo above instead.";
+      setUploadMsg(`vision_mode_pending (501): ${msg}`, "adapter");
     } else if (res.status === 503) {
       const data = await res.json().catch(() => ({}));
       const msg = data.message || "Spatial adapter not trained yet — run T7 then switch pipeline backend.";
