@@ -4,10 +4,10 @@ Serves a static vanilla-JS frontend plus a 4-stage spatial reasoning API:
 
     stage1 grounding -> stage2 scene graph -> stage3 reasoning -> stage4 answer
 
-The demo currently runs on the deterministic :class:`MockBackend` from the
-T8 pipeline until the T7 Qwen2.5-VL LoRA adapter is available; image upload
-therefore returns a structured ``adapter_not_ready`` response (HTTP 503),
-while non-image files are rejected with HTTP 400.
+The demo runs on the T7 Qwen2.5-VL LoRA adapter when ``outputs/lora_adapter``
+is present (rule-based :class:`MockBackend` fallback otherwise). Image upload
+returns ``vision_mode_pending`` (HTTP 501) because the adapter is text-only:
+it requires the scene metadata emitted by the demo scenes, not a raw image.
 
 Run from the repo root::
 
@@ -28,11 +28,12 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from pipeline.pipeline import MockBackend, SpatialPipeline
+from pipeline.pipeline import MockBackend, QwenVLBackend, SpatialPipeline
 
 APP_DIR = Path(__file__).resolve().parent
 STATIC_DIR = APP_DIR / "static"
 VAL_JSONL = REPO_ROOT / "data" / "kitti_scene_val.jsonl"
+ADAPTER_DIR = REPO_ROOT / "outputs" / "lora_adapter"
 
 # Curated demo selection from the T6 val split — mixed safe/unsafe and
 # minimal/dense scenes so the 4-stage visualization is visibly diverse.
@@ -55,7 +56,15 @@ ALLOWED_IMAGE_EXTS = frozenset({".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"
 
 app = FastAPI(title="FSD Spatial Reasoning Demo")
 
-_pipeline = SpatialPipeline(MockBackend())
+def _build_pipeline() -> SpatialPipeline:
+    """Select QwenVLBackend when the T7 adapter is present, else MockBackend."""
+    if ADAPTER_DIR.exists():
+        return SpatialPipeline(QwenVLBackend(str(ADAPTER_DIR)))
+    print("[INFO] outputs/lora_adapter not found — falling back to MockBackend.")
+    return SpatialPipeline(MockBackend())
+
+
+_pipeline = _build_pipeline()
 _scenes: dict[str, dict[str, Any]] | None = None
 _result_cache: dict[str, dict[str, Any]] = {}
 
@@ -150,17 +159,20 @@ def api_demo(scene_id: str) -> dict[str, Any]:
 
 
 @app.post("/api/upload")
-async def api_upload(file: UploadFile) -> dict[str, Any]:
+async def api_upload(file: UploadFile) -> Any:
     content = await file.read()
     name = file.filename or ""
     if not content or not _is_image(content, name):
         raise HTTPException(status_code=400, detail="Not a valid image file — upload PNG/JPG")
     return JSONResponse(
-        status_code=503,
+        status_code=501,
         content={
-            "status": "adapter_not_ready",
-            "code": 503,
-            "message": "Spatial adapter not trained yet — run T7 then switch pipeline backend.",
+            "status": "vision_mode_pending",
+            "code": 501,
+            "message": (
+                "Text-only adapter is ready; raw-image upload requires the "
+                "vision branch (object detection -> entities). Use /api/demo/{scene_id}."
+            ),
         },
     )
 

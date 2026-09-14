@@ -86,14 +86,27 @@ class MockBackend:
 
 
 class QwenVLBackend:
-    """Stub for the T7 Qwen2.5-VL adapter.
+    """Qwen2.5-VL-3B QLoRA backend for the T7-trained spatial adapter.
 
-    Raises FileNotFoundError if ``outputs/lora_adapter`` does not exist,
-    clearly instructing the operator to finish task 7 first.
+    Entity / scene-graph extraction stays deterministic (mirrors
+    :class:`MockBackend`); the LoRA-tuned model additionally generates the
+    final spatial-verdict answer for the question, which the pipeline uses in
+    place of the rule-based stage-4 verdict when available.
+
+    Raises FileNotFoundError if ``outputs/lora_adapter`` does not exist.
+    Model weights are loaded lazily on the first :meth:`generate` call.
     """
+
+    MODEL_ID = "Qwen/Qwen2.5-VL-3B-Instruct"
+    MAX_NEW_TOKENS = 128
+    MAX_LENGTH = 1024
 
     def __init__(self, adapter_path: str = "outputs/lora_adapter") -> None:
         self._adapter_path = Path(adapter_path)
+        self._model = None
+        self._tokenizer = None
+
+    # -- LLMBackend protocol ------------------------------------------
 
     def generate(self, scene: dict[str, Any], question: str) -> dict[str, Any]:
         if not self._adapter_path.exists():
@@ -102,7 +115,93 @@ class QwenVLBackend:
                 "Run task 7 (T7 Qwen2.5-VL-3B LoRA fine-tuning) first, then retry.\n"
                 "Meanwhile, use MockBackend for offline testing."
             )
-        raise NotImplementedError("QwenVLBackend.generate() not yet implemented — T7 pending.")
+        entities = MockBackend._extract_entities(scene)
+        graph = MockBackend._build_graph(scene)
+        result: dict[str, Any] = {"entities": entities, "scene_graph": graph}
+        try:
+            answer = self._infer(scene, question)
+            if answer:
+                result["answer"] = answer
+        except Exception as exc:  # inference unavailable -> rule-based fallback
+            print(f"[QwenVLBackend] inference failed, falling back to rules: {exc}")
+        return result
+
+    # -- inference -----------------------------------------------------
+
+    def _ensure_model(self) -> None:
+        """Lazily load base model (bf16) + LoRA adapter. ~6GB VRAM (CPU/MPS ok)."""
+        if self._model is not None:
+            return
+        import os
+
+        os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
+        import torch
+        from peft import PeftModel
+        from transformers import AutoModelForVision2Seq, AutoTokenizer
+
+        base = AutoModelForVision2Seq.from_pretrained(
+            self.MODEL_ID,
+            torch_dtype=torch.bfloat16,
+            device_map="auto",
+        )
+        model = PeftModel.from_pretrained(base, str(self._adapter_path))
+        model.eval()
+        self._model = model
+        self._tokenizer = AutoTokenizer.from_pretrained(self.MODEL_ID)
+
+    def _infer(self, scene: dict[str, Any], question: str) -> str:
+        self._ensure_model()
+        import torch
+
+        prompt = self._render_prompt(scene, question)
+        inputs = self._tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=self.MAX_LENGTH,
+        ).to(self._model.device)
+        with torch.no_grad():
+            out = self._model.generate(
+                **inputs,
+                max_new_tokens=self.MAX_NEW_TOKENS,
+                do_sample=False,
+            )
+        return self._tokenizer.decode(
+            out[0][inputs["input_ids"].shape[1]:],
+            skip_special_tokens=True,
+        ).strip()
+
+    @staticmethod
+    def _render_prompt(scene: dict[str, Any], question: str) -> str:
+        """Render the same text-only prompt format used for training."""
+        parts: list[str] = [
+            f"Image path: {scene.get('image_path', 'N/A')}",
+            f"Image size: {scene.get('image_size', 'N/A')}",
+        ]
+        entities = scene.get("entities", [])
+        if entities:
+            ent_lines = []
+            for e in entities:
+                bbox_str = [f"{v:.4f}" for v in e.get("bbox", [])]
+                ent_lines.append(
+                    f"  - {e['name']} ({e['class']}): bbox=[{', '.join(bbox_str)}]"
+                )
+            parts.append("Entities:\n" + "\n".join(ent_lines))
+        sg = scene.get("scene_graph", [])
+        if sg:
+            sg_lines = [f"  - {t['subject']} --{t['relation']}--> {t['object']}" for t in sg]
+            parts.append("Scene graph:\n" + "\n".join(sg_lines))
+        sr = scene.get("staged_reasoning", [])
+        if sr:
+            sr_lines = [f"  Step {s['step']}: {s['text']}" for s in sr]
+            parts.append("Staged reasoning:\n" + "\n".join(sr_lines))
+        context = "\n".join(parts)
+        user_msg = (
+            f"Given the following autonomous driving scene:\n\n{context}\n\n"
+            f"Question: {scene.get('question', question)}\n"
+            f"Answer:"
+        )
+        return f"<|user|>\n{user_msg}\n<|assistant|>\n"
 
 
 # ---------------------------------------------------------------------------
@@ -145,6 +244,17 @@ class SpatialPipeline:
         # --- Stage 4: Final Answer ---
         s4 = self._stage4_answer(s3)
 
+        # --- Model-backed verdict (optional) ---
+        model_answer = self._backend_answer(scene, question)
+        if model_answer:
+            s4 = model_answer
+            s3 = s3 + [
+                {
+                    "step": 5,
+                    "text": f"Model verdict: {model_answer}",
+                }
+            ]
+
         return {
             "scene_id": scene_id,
             "question": question,
@@ -155,6 +265,16 @@ class SpatialPipeline:
         }
 
     # --- Stage implementations -------------------------------------------
+
+    def _backend_answer(self, scene: dict[str, Any], question: str) -> str:
+        """Model-generated verdict from backend.generate(), empty on any failure."""
+        try:
+            out = self.backend.generate(scene, question)
+        except (FileNotFoundError, NotImplementedError, RuntimeError):
+            return ""
+        if isinstance(out, dict) and out.get("answer"):
+            return str(out["answer"]).strip()
+        return ""
 
     def _stage1_grounding(self, scene: dict[str, Any]) -> list[dict[str, Any]]:
         """Normalize entities: drop DontCare, validate bbox coherence."""

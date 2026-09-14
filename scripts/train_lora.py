@@ -204,7 +204,7 @@ def dataset_check(train_path: str, val_path: str) -> bool:
 def train(mode: str = "text-only") -> None:
     import torch
     from transformers import (
-        AutoModelForCausalLM,
+        AutoModelForVision2Seq,
         AutoTokenizer,
         BitsAndBytesConfig,
         TrainingArguments,
@@ -245,7 +245,7 @@ def train(mode: str = "text-only") -> None:
     print(f"[INFO] Loading model: {cfg['model_id']} (4-bit QLoRA)...")
     t0 = time.time()
     try:
-        model = AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForVision2Seq.from_pretrained(
             cfg["model_id"],
             quantization_config=bnb_config,
             device_map="auto",
@@ -264,7 +264,7 @@ def train(mode: str = "text-only") -> None:
         cfg["max_length"] = 512
         cfg["per_device_batch_size"] = 1
         cfg["gradient_accumulation_steps"] = 32
-        model = AutoModelForCausalLM.from_pretrained(
+        model = AutoModelForVision2Seq.from_pretrained(
             cfg["model_id"],
             quantization_config=bnb_config,
             device_map="auto",
@@ -365,7 +365,7 @@ def train(mode: str = "text-only") -> None:
         bf16=use_bf16,
         fp16=not use_bf16,
         report_to="none",
-        load_best_model_at_end=True,
+        load_best_model_at_end=False,
         metric_for_best_model="eval_loss",
         greater_is_better=False,
         dataloader_pin_memory=False,
