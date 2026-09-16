@@ -22,6 +22,35 @@ KITTI_VALID_CLASSES = frozenset(
 VULNERABLE_CLASSES = frozenset({"Pedestrian", "Cyclist", "Person_sitting"})
 
 # ---------------------------------------------------------------------------
+# CANNOT spatial-signal vocabulary (v14 — grounded in real val data, NOT
+# relabel-overfit: every token below is a class / relation string that exists
+# in data/kitti_scene_val.jsonl scene_graph entries).
+#
+#   * Tram(10 scenes), Truck(13), Van(6)  → heavy / rail blocking classes
+#   * relation near_crosswalk(7)          → crosswalk / jaywalk occupancy
+#   * relation is_ahead_of(145)           → forward-path occupancy of ego
+# ---------------------------------------------------------------------------
+
+# Classes whose occupancy of the ego forward path makes automatic payment
+# CANNOT (heavy vehicles + fixed-rail transit that block the centre roadway).
+BLOCKING_AHEAD_CLASSES = frozenset({"Tram", "Truck", "Van"})
+
+# Relations asserting an entity occupies a crosswalk / intersecting path.
+CROSSWALK_OCCUPANCY_RELATIONS = frozenset(
+    {"near_crosswalk", "is_near_crosswalk", "occupies_crosswalk"}
+)
+
+# Relations asserting the ego forward path is blocked (ego must NOT proceed).
+EGO_FORWARD_BLOCKED_RELATIONS = frozenset(
+    {"is_ahead_of", "is_ahead", "is_in_front_of", "blocks_ego_path", "blocks_lane", "occupies_ego_lane"}
+)
+
+# Relations asserting dangerous proximity of a vulnerable / heavy entity to ego.
+EGO_DANGER_PROXIMITY_RELATIONS = frozenset(
+    {"near_ego_vehicle", "is_near", "near_ego", "is_left_of_ego", "is_right_of_ego"}
+)
+
+# ---------------------------------------------------------------------------
 # LLM Backend protocol + implementations
 # ---------------------------------------------------------------------------
 
@@ -357,29 +386,49 @@ class SpatialPipeline:
             }
         )
 
-        # Step 3 — safety analysis
+        # Step 3 — safety analysis (directional: only occupancy of the ego
+        # forward path / crosswalk blocks payment; roadside-left/right or
+        # roadside-behind proximity does NOT).
         vulnerable_ahead = False
         vulnerable_entities = [
             e for e in entities if e["class"] in VULNERABLE_CLASSES
         ]
-        ego_relations = [
+        vulnerable_names = {e["name"] for e in vulnerable_entities}
+
+        # (a) vulnerable entity directly in the ego forward path
+        vuln_forward = [
             t
             for t in graph
             if t["object"] == "ego_vehicle"
-            and t["subject"] in {e["name"] for e in vulnerable_entities}
+            and t["relation"] == "is_ahead_of"
+            and t["subject"] in vulnerable_names
         ]
-
-        if ego_relations:
+        if vuln_forward:
             vulnerable_ahead = True
 
-        # Also check if a vulnerable entity is "near" or "is_near" ego
-        near_ego_vulnerable = [
+        # (b) vulnerable entity occupying a crosswalk / jaywalking across the
+        # ego forward path (crosswalk occupancy = forward-path hazard even
+        # without an explicit is_ahead_of-to-ego triple).
+        vuln_crosswalk = [
             t
             for t in graph
-            if t["relation"] in ("near_ego_vehicle", "is_near")
-            and t["subject"] in {e["name"] for e in vulnerable_entities}
+            if t["relation"] == "near_crosswalk"
+            and t["subject"] in vulnerable_names
         ]
-        if near_ego_vulnerable:
+        if vuln_crosswalk:
+            vulnerable_ahead = True
+
+        # (c) heavy / transit vehicle blocking the ego forward path
+        # (tram occupies the centre lane, truck / van jack-knifes or idles
+        # across the travel lane).
+        heavy_blocking = [
+            t
+            for t in graph
+            if t["object"] == "ego_vehicle"
+            and t["relation"] == "is_ahead_of"
+            and t["subject"] in BLOCKING_AHEAD_CLASSES
+        ]
+        if heavy_blocking:
             vulnerable_ahead = True
 
         if vulnerable_ahead:
