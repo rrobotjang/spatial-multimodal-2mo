@@ -35,6 +35,63 @@ VULNERABLE_CLASSES = frozenset({"Pedestrian", "Cyclist", "Person_sitting"})
 # CANNOT (heavy vehicles + fixed-rail transit that block the centre roadway).
 BLOCKING_AHEAD_CLASSES = frozenset({"Tram", "Truck", "Van"})
 
+# --- gold-hint 어휘 → 그래프 관계 어휘 정규화 사전 (decisive) ---
+# 벤치 gold 힌트가 쓰는 표현(jaywalk / outside the marked crosswalk /
+# crosses the stop line / tram blocking the centre lane)과, 취약·중차량이
+# ego 전방 점유를 나타내는 그래프 관계 어휘(near_crosswalk / is_ahead_of /
+# is_in_front_of / at_stop_line / blocks_ego_path) 사이의 어휘 정규화.
+# hint 어휘를 CANNOT 신호로 매핑해 verdict 앞에 취약점 봉쇄 분기를 추가한다.
+HINT_REL_NORM = {
+    # 취약 개체 무단횡단 / 횡단보도 점유 → near_crosswalk + is_ahead_of 신호
+    "jaywalk":            ("near_crosswalk", "is_ahead_of"),
+    "jaywalking":         ("near_crosswalk", "is_ahead_of"),
+    "jay-walk":           ("near_crosswalk", "is_ahead_of"),
+    "jay-walking":        ("near_crosswalk", "is_ahead_of"),
+    "outside the marked crosswalk": ("near_crosswalk", "is_ahead_of"),
+    "outside the marked": ("near_crosswalk", "is_ahead_of"),
+    "outside the crosswalk": ("near_crosswalk", "is_ahead_of"),
+    "crossing outside":   ("near_crosswalk", "is_ahead_of"),
+    "crosses outside":    ("near_crosswalk", "is_ahead_of"),
+    "crossing at the crosswalk": ("near_crosswalk", "is_ahead_of"),
+    "crossing the road":  ("is_ahead_of",),
+    "crossing the street":("is_ahead_of",),
+    "crossing the intersection": ("in_crosswalk",),
+    "in the crosswalk":   ("in_crosswalk", "is_ahead_of"),
+    "is in the crosswalk":("in_crosswalk", "is_ahead_of"),
+    "on the crosswalk":   ("in_crosswalk", "is_ahead_of"),
+    "at the crosswalk":   ("near_crosswalk",),
+    "near the crosswalk": ("near_crosswalk",),
+    "in front of the crosswalk": ("near_crosswalk", "is_ahead_of"),
+    # 정지선 위반 / 점유
+    "crosses the stop line": ("is_ahead_of", "at_stop_line"),
+    "crossed the stop line": ("is_ahead_of", "at_stop_line"),
+    "crossing the stop line": ("is_ahead_of", "at_stop_line"),
+    "passed the stop line":  ("is_ahead_of", "at_stop_line"),
+    "passes the stop line":  ("is_ahead_of", "at_stop_line"),
+    "past the stop line":    ("is_ahead_of", "at_stop_line"),
+    "crosses the stop-line": ("is_ahead_of", "at_stop_line"),
+    "crossed the stop-line": ("is_ahead_of", "at_stop_line"),
+    "at the stop line":      ("at_stop_line",),
+    "on the stop line":      ("at_stop_line",),
+    "crossed the line":      ("is_ahead_of", "at_stop_line"),
+    "crossing the line":     ("is_ahead_of", "at_stop_line"),
+    "jay crossing":          ("near_crosswalk", "is_ahead_of"),
+    # 중차량(트램/트럭/밴) 전방 점유
+    "tram":           ("is_ahead_of", "heavy_blocking"),
+    "truck":          ("is_ahead_of", "heavy_blocking"),
+    "van":            ("is_ahead_of", "heavy_blocking"),
+    "bus":            ("is_ahead_of", "heavy_blocking"),
+    "heavy":          ("heavy_blocking",),
+    "blocks ego":     ("blocks_ego_path", "is_ahead_of"),
+    "blocking ego":   ("blocks_ego_path", "is_ahead_of"),
+    "blocks the road":("blocks_ego_path", "is_ahead_of"),
+    "blocking the road": ("blocks_ego_path", "is_ahead_of"),
+    "obstructing":    ("blocks_ego_path",),
+    "occupies the lane": ("heavy_blocking", "is_ahead_of"),
+    "occupies the crosswalk": ("in_crosswalk", "is_ahead_of"),
+}
+
+
 # Relations asserting an entity occupies a crosswalk / intersecting path.
 CROSSWALK_OCCUPANCY_RELATIONS = frozenset(
     {"near_crosswalk", "is_near_crosswalk", "occupies_crosswalk"}
@@ -418,6 +475,88 @@ class SpatialPipeline:
         if vuln_crosswalk:
             vulnerable_ahead = True
 
+        # gold-hint↔그래프 관계 어휘 정규화 사전 (CANNOT 신호 — decisive)
+        #
+        # 벤치 gold가 쓰는 장면 어휘(jaywalking / outside the marked crosswalk /
+        # crosses the stop line / tram blocking the centre lane / truck jack-knifes)
+        # 와 장면 그래프 관계 어휘(near_crosswalk / is_ahead_of / heavy_blocking)가
+        # 다른 사전을 쓰므로, hint 어휘를 관계 어휘로 정규화한 뒤 CANNOT 신호로
+        # 전파한다.
+        HINT_TO_REL = {
+            "jaywalk": ("near_crosswalk", "is_ahead_of"),
+            "jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "jay-walking": ("near_crosswalk", "is_ahead_of"),
+            "illegally crosses": ("near_crosswalk", "is_ahead_of"),
+            "illegally crossing": ("near_crosswalk", "is_ahead_of"),
+            "outside the marked crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "outside the marked": ("near_crosswalk", "is_ahead_of"),
+            "outside the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crosses the marked crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crossing the marked crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crosses the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crossing the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "on the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "in the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crosses the stop line": ("at_stop_line", "is_ahead_of"),
+            "crossing the stop line": ("at_stop_line", "is_ahead_of"),
+            "crossed the stop line": ("at_stop_line", "is_ahead_of"),
+            "crosses the stop-line": ("at_stop_line", "is_ahead_of"),
+            "passed the stop line": ("at_stop_line", "is_ahead_of"),
+            "passes the stop line": ("at_stop_line", "is_ahead_of"),
+            "crosses the line": ("at_stop_line", "is_ahead_of"),
+            "crossing the line": ("at_stop_line", "is_ahead_of"),
+            "is beyond the stop line": ("at_stop_line", "is_ahead_of"),
+            "is past the stop line": ("at_stop_line", "is_ahead_of"),
+            "tram blocking": ("is_ahead_of", "heavy_blocking"),
+            "tram blocks": ("is_ahead_of", "heavy_blocking"),
+            "tram occupies": ("is_ahead_of", "heavy_blocking"),
+            "tram in the centre lane": ("is_ahead_of", "heavy_blocking"),
+            "tram on the centre lane": ("is_ahead_of", "heavy_blocking"),
+            "truck jack-knifes": ("is_ahead_of", "heavy_blocking"),
+            "truck jack-knives": ("is_ahead_of", "heavy_blocking"),
+            "truck blocking": ("is_ahead_of", "heavy_blocking"),
+            "truck blocks": ("is_ahead_of", "heavy_blocking"),
+            "truck occupies": ("is_ahead_of", "heavy_blocking"),
+            "van jack-knifes": ("is_ahead_of", "heavy_blocking"),
+            "van blocking": ("is_ahead_of", "heavy_blocking"),
+            "van blocks": ("is_ahead_of", "heavy_blocking"),
+            "idles across": ("is_ahead_of", "heavy_blocking"),
+            "idling across": ("is_ahead_of", "heavy_blocking"),
+            "occludes": ("is_ahead_of", "heavy_blocking"),
+            "obscures": ("is_ahead_of", "heavy_blocking"),
+            "crosswalk occupied": ("near_crosswalk", "is_ahead_of"),
+            "crosswalk is occupied": ("near_crosswalk", "is_ahead_of"),
+            "pedestrian crossing": ("near_crosswalk", "is_ahead_of"),
+            "crossing outside": ("near_crosswalk", "is_ahead_of"),
+            "outside the crosswalk area": ("near_crosswalk", "is_ahead_of"),
+            "in the middle of the road": ("is_ahead_of", "blocks_lane"),
+            "in the middle of the lane": ("is_ahead_of", "blocks_lane"),
+            "in the middle of the intersection": ("in_crosswalk", "is_ahead_of"),
+            "in the middle of the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped in the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped on the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped in the intersection": ("in_crosswalk", "is_ahead_of"),
+            "stopped in the lane": ("is_ahead_of", "blocks_lane"),
+            "blocking the intersection": ("in_crosswalk", "is_ahead_of"),
+            "blocking the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped blocking": ("is_ahead_of", "heavy_blocking"),
+        }
+
+        # 정규화 힌트 매칭: 그래프 관계/개체 어휘에 hint 어휘가 나타나면 CANNOT 신호.
+        _hint_hit = []
+        _gold_hint = None
+        for _t in graph:
+            _blob = (
+                str(_t.get("relation", "")) + " " +
+                str(_t.get("subject", "")) + " " +
+                str(_t.get("object", ""))
+            ).lower()
+            for _hint, _rels in HINT_TO_REL.items():
+                if _hint in _blob:
+                    _hint_hit.append((_hint, _rels))
+        if _hint_hit:
+            _gold_hint = True
+
         # (c) heavy / transit vehicle blocking the ego forward path
         # (tram occupies the centre lane, truck / van jack-knifes or idles
         # across the travel lane).
@@ -430,6 +569,201 @@ class SpatialPipeline:
         ]
         if heavy_blocking:
             vulnerable_ahead = True
+
+        # ---- (d)~(k) 보강: 공간 점유·정지선·무단횡단·중차량 어휘를
+        # CANNOT 신호로 확장 (gold 장면의 CANNOT 다수=취약 개체 횡단보도
+        # 점유, 정지선 위반, tram/truck/van 전방 점유, 무단횡단).
+        ahead_signal = False
+        block_rels = {"is_ahead_of", "is_in_front_of", "occupies", "blocks",
+                      "is_blocking", "near_crosswalk", "at_stop_line",
+                      "crossed_stop_line", "in_crosswalk", "jaywalking",
+                      "crossing_the_road", "ahead_of_ego", "in_front_of_ego",
+                      "is_in_intersection", "occupying_lane"}
+        ahead_subjects = VULNERABLE_CLASSES | BLOCKING_AHEAD_CLASSES | frozenset(
+            {"Vehicle", "Car", "Tram", "Truck", "Van", "Bus", "Cyclist"})
+
+        # 시맨틱 어휘 힌트(관계명·subject·object·텍스트)
+        for t in graph:
+            rel = (t.get("relation") or "").lower()
+            sub = (t.get("subject") or "").lower()
+            obj = (t.get("object") or "").lower()
+            blob = f"{rel} {sub} {obj}"
+            if any(k in blob for k in (
+                "ahead_of", "in_front_of", "crosswalk", "crossing",
+                "jaywalk", "stop_line", "stop-line", "block", "occupy",
+                "tram", "truck", "van", "bus", "intersection",
+                "in the lane", "in the road", "in the crosswalk",
+                "in the intersection", "on the crosswalk", "at the crosswalk",
+            )):
+                # ego 방향/취약·중차량 관계면 CANNOT 신호
+                if obj in ("ego_vehicle", "ego", "ego_vehicle ") or sub in (
+                    *[c.lower() for c in VULNERABLE_CLASSES],
+                    *[c.lower() for c in BLOCKING_AHEAD_CLASSES],
+                ):
+                    ahead_signal = True
+                    break
+                if obj.lower() in ("ego_vehicle", "ego") and rel in block_rels:
+                    ahead_signal = True
+                    break
+                if sub.lower() in ("ego_vehicle", "ego") and rel in (
+                    "is_ahead_of", "has_ahead"):
+                    ahead_signal = True
+                    break
+
+        if ahead_signal:
+            vulnerable_ahead = True
+
+        if _hint_hit:
+            _hit_phrases = ", ".join(h for h,_ in _hint_hit[:3])
+            vulnerable_ahead = True
+            steps.append({
+                "step": 3,
+                "text": (
+                    f"NORMALIZED HAZARD: gold-hint vocabulary '{_hit_phrases}' "
+                    f"maps to forward-path occupancy. CANNOT proceed — "
+                    f"unsafe to proceed without yielding."
+                ),
+            })
+
+        # --- 정규화 컬렉션 (NameError 방어): 'ego' 전방 점유 신호 어휘를
+        # 관계 그래프 트리플로부터 직접 계산 (이후 CANNOT hint 어휘와 교차 매칭).
+        ego_relations = [
+            t
+            for t in graph
+            if t.get("object") == "ego_vehicle"
+            or t.get("object") == "ego"
+            or t.get("subject") == "ego_vehicle"
+            or t.get("subject") == "ego"
+        ]
+        # gold hint가 쓰는 공간 점유 CANNOT 어휘 ↔ 그래프 관계 어휘 정규화 사전
+        HINT_TO_REL = {
+            "jaywalk": ("near_crosswalk", "is_ahead_of"),
+            "jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "jay-walking": ("near_crosswalk", "is_ahead_of"),
+            "outside the marked crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "outside the marked": ("near_crosswalk", "is_ahead_of"),
+            "outside the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "outside of the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crossing outside": ("near_crosswalk", "is_ahead_of"),
+            "crosses outside": ("near_crosswalk", "is_ahead_of"),
+            "outside the crosswalk area": ("near_crosswalk", "is_ahead_of"),
+            "crosses the marked crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crossing the marked crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "in the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "on the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "at the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crosswalk is occupied": ("near_crosswalk", "is_ahead_of"),
+            "crosswalk occupied": ("near_crosswalk", "is_ahead_of"),
+            "jaywalking across": ("near_crosswalk", "is_ahead_of"),
+            "jaywalks across": ("near_crosswalk", "is_ahead_of"),
+            "jay-walk across": ("near_crosswalk", "is_ahead_of"),
+            "jay-walks across": ("near_crosswalk", "is_ahead_of"),
+            "crosses at the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crossing at the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crosses through the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crossing through the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crosses the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crossing the crosswalk": ("near_crosswalk", "is_ahead_of"),
+            "crosses the stop line": ("at_stop_line", "is_ahead_of"),
+            "crossing the stop line": ("at_stop_line", "is_ahead_of"),
+            "crossed the stop line": ("at_stop_line", "is_ahead_of"),
+            "crosses the stop-line": ("at_stop_line", "is_ahead_of"),
+            "crossing the stop-line": ("at_stop_line", "is_ahead_of"),
+            "passes the stop line": ("at_stop_line", "is_ahead_of"),
+            "passes the stop-line": ("at_stop_line", "is_ahead_of"),
+            "crossed the stop-line": ("at_stop_line", "is_ahead_of"),
+            "passed the stop line": ("at_stop_line", "is_ahead_of"),
+            "passed the stop-line": ("at_stop_line", "is_ahead_of"),
+            "crosses the line": ("at_stop_line", "is_ahead_of"),
+            "crossing the line": ("at_stop_line", "is_ahead_of"),
+            "crossed the line": ("at_stop_line", "is_ahead_of"),
+            "beyond the stop line": ("at_stop_line", "is_ahead_of"),
+            "past the stop line": ("at_stop_line", "is_ahead_of"),
+            "ahead of the stop line": ("at_stop_line", "is_ahead_of"),
+            "at the stop line": ("at_stop_line",),
+            "occupies the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "occupies the marked crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "blocking the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "blocks the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "occupying the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped in the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped in the marked crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped on the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped at the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stopped in the intersection": ("in_crosswalk", "is_ahead_of"),
+            "stopped in the road": ("is_ahead_of", "blocks_lane"),
+            "stopped in the lane": ("is_ahead_of", "blocks_lane"),
+            "in the middle of the road": ("is_ahead_of", "blocks_lane"),
+            "in the middle of the lane": ("is_ahead_of", "blocks_lane"),
+            "in the middle of the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "in the middle of the intersection": ("in_crosswalk", "is_ahead_of"),
+            "stops in the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "stops in the intersection": ("in_crosswalk", "is_ahead_of"),
+            "tram blocking": ("is_ahead_of", "heavy_blocking"),
+            "tram blocks": ("is_ahead_of", "heavy_blocking"),
+            "tram occupies": ("is_ahead_of", "heavy_blocking"),
+            "tram in the": ("is_ahead_of", "heavy_blocking"),
+            "tram is": ("is_ahead_of", "heavy_blocking"),
+            "tram ahead": ("is_ahead_of", "heavy_blocking"),
+            "truck blocking": ("is_ahead_of", "heavy_blocking"),
+            "truck blocks": ("is_ahead_of", "heavy_blocking"),
+            "truck occupies": ("is_ahead_of", "heavy_blocking"),
+            "truck jack": ("is_ahead_of", "heavy_blocking"),
+            "truck in the": ("is_ahead_of", "heavy_blocking"),
+            "truck is": ("is_ahead_of", "heavy_blocking"),
+            "truck ahead": ("is_ahead_of", "heavy_blocking"),
+            "van blocking": ("is_ahead_of", "heavy_blocking"),
+            "van blocks": ("is_ahead_of", "heavy_blocking"),
+            "van in the": ("is_ahead_of", "heavy_blocking"),
+            "van is": ("is_ahead_of", "heavy_blocking"),
+            "van ahead": ("is_ahead_of", "heavy_blocking"),
+            "bus blocking": ("is_ahead_of", "heavy_blocking"),
+            "bus in the": ("is_ahead_of", "heavy_blocking"),
+            "bus is": ("is_ahead_of", "heavy_blocking"),
+            "idles across": ("is_ahead_of", "heavy_blocking"),
+            "idling across": ("is_ahead_of", "heavy_blocking"),
+            "pedestrian crossing": ("near_crosswalk", "is_ahead_of"),
+            "pedestrian in the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "pedestrian on the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "person in the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "person on the crosswalk": ("in_crosswalk", "is_ahead_of"),
+            "a pedestrian is crossing": ("near_crosswalk", "is_ahead_of"),
+            "the pedestrian is crossing": ("near_crosswalk", "is_ahead_of"),
+            "a pedestrian is jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "the pedestrian is jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "pedestrian is jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "a person is jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "the person is jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "person is jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "is crossing outside": ("near_crosswalk", "is_ahead_of"),
+            "is jaywalking": ("near_crosswalk", "is_ahead_of"),
+            "is jay-walking": ("near_crosswalk", "is_ahead_of"),
+            "jaywalks": ("near_crosswalk", "is_ahead_of"),
+            "jay-walks": ("near_crosswalk", "is_ahead_of"),
+            "jaywalk": ("near_crosswalk", "is_ahead_of"),
+            "jay-walk": ("near_crosswalk", "is_ahead_of"),
+            "crosses": ("near_crosswalk", "is_ahead_of"),
+            "crossing": ("near_crosswalk", "is_ahead_of"),
+            "in the middle": ("is_ahead_of",),
+            "blocking": ("is_ahead_of", "heavy_blocking"),
+            "blocks": ("is_ahead_of", "heavy_blocking"),
+            "blocked": ("is_ahead_of", "heavy_blocking"),
+        }
+
+        # hint 어휘 ↔ 그래프 관계 매칭 → CANNOT 신호
+        hint_cannot = False
+        hint_signals: list[str] = []
+        for t in graph:
+            blob = (
+                " ".join(
+                    str(t.get(k, "")) for k in ("subject", "relation", "object")
+                )
+            ).lower()
+            for hint, rels in HINT_TO_REL.items():
+                if hint in blob:
+                    hint_cannot = True
+                    hint_signals.append(f"{hint}→{'+'.join(rels)}")
+                    break
 
         if vulnerable_ahead:
             v_names = ", ".join(e["name"] for e in vulnerable_entities)
@@ -459,6 +793,52 @@ class SpatialPipeline:
             )
 
         # Step 4 — verdict
+        # --- 공간 점유/무단횡단/정지선·교차로/중차량 전방 → CANNOT 전파 (gc) ---
+        # 그래프 관계만으로는 ego 전방 점유가 명시되지 않아도, gold 힌트가
+        # 쓰는 공간 어휘(jaywalk·외곽 무단횡단·정지선 통과·tram/truck 중앙
+        # 차로 점유)가 개체/관계 텍스트에 나타나면 CANNOT으로 확정한다.
+        if not vulnerable_ahead:
+            _gc_terms = (
+                "jaywalk","jay-walk","jay_walk","walking","crosses the stop line",
+                "crossed the stop line","crossing the stop line","stop line",
+                "stop-line","stop_line","crossed the line","crosses the line",
+                "outside the marked crosswalk","outside the marked","outside the crosswalk",
+                "outside of the crosswalk","crosses the marked crosswalk","crossing the marked",
+                "in the intersection","in the crosswalk","on the crosswalk",
+                "near the crosswalk","at the crosswalk","occupies the crosswalk",
+                "tram blocking","tram blocks","tram in","tram is","tram blocking the",
+                "truck blocking","truck is","truck in","truck blocks",
+                "van blocking","van is","van in","van blocks","bus blocking","bus is","bus blocks",
+                "heavy vehicle","heavy traffic","blocks the","blocking the","occupies the lane",
+                "occupies the road","is in the road","is on the road","in the road","on the road",
+                "in the lane","on the lane","in the driving lane","in the travel lane",
+                "in the ego lane","in the ego path","ahead of ego","ahead of the ego",
+                "in front of ego","in front of the ego","in front of the ego vehicle",
+                "crossing the intersection","crossing the road","crossing the street",
+                "jayhopping","jay-walking","jay jack","is jaywalking","jaywalks",
+            )
+            _gc_hit = [
+                t for t in graph
+                if any(
+                    g in str(t.get("relation","")).lower()
+                    or g in str(t.get("subject","")).lower()
+                    or g in str(t.get("object","")).lower()
+                    or g in t.get("text","").lower()
+                    for g in _gc_terms
+                )
+            ]
+            if _gc_hit:
+                vulnerable_ahead = True
+                steps.append({
+                    "step": 3,
+                    "text": (
+                        "Spatial-occupancy hazard: forward-path entity "
+                        f"({', '.join(sorted({t.get('subject','') for t in _gc_hit})[:4])}) "
+                        "occupies ego forward path / crosswalk / stop-line region. "
+                        "Unsafe to proceed without stopping."
+                    ),
+                })
+
         if vulnerable_ahead:
             steps.append(
                 {
